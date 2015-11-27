@@ -20,15 +20,15 @@ Instruction
 );
 
 	
-	input [31:0]   Instruction;			// current instruction
-	output		   MemtoReg;			// use memory output as data to write into register
-	output		   RegWrite;		    // enable writing back to the register
-	output		   MemWrite;			// write to memory
-	output         MemRead;
-	output [4:0]   ALUCode;             // ALU operation select
-	output         ALUSrcA,ALUSrcB;
-	output         RegDst;
-	output         J,JR;
+	input [31:0]      Instruction;			// current instruction
+	output		      MemtoReg; 			// use memory output as data to write into register
+	output		      RegWrite; 		    // enable writing back to the register
+	output		      MemWrite; 			// write to memory
+	output            MemRead;
+	output reg[4:0]   ALUCode;              // ALU operation select
+	output            ALUSrcA,ALUSrcB;
+	output            RegDst;
+	output            J,JR;
 	
 	
 
@@ -207,8 +207,41 @@ Instruction
 	parameter	 alu_sra=  5'b10010;	
 	parameter	 alu_slt=  5'b10011;
     parameter	 alu_sltu= 5'b10100;
-		
 	
+    always@(*)
+      casex({op,funct,rt})
+	    {BEQ_op,    {6{1'bx}},  {5{1'bx}}}:   ALUCode = alu_beq[4:0];
+		{BNE_op,    {6{1'bx}},  {5{1'bx}}}:   ALUCode = alu_bne[4:0];
+		{BGEZ_op,   {6{1'bx}},    5'd0   }:   ALUCode = alu_bgez[4:0];
+		{BGTZ_op,   {6{1'bx}},    5'd0   }:   ALUCode = alu_bgtz[4:0];
+		{BLEZ_op,   {6{1'bx}},    5'd0   }:   ALUCode = alu_blez[4:0];
+		{BLTZ_op,   {6{1'bx}},    5'd0   }:   ALUCode = alu_bltz[4:0];
+		{R_type_op, ADD_funct,  {5{1'bx}}}:   ALUCode = alu_add[4:0];
+		{R_type_op, ADDU_funct, {5{1'bx}}}:   ALUCode = alu_add[4:0];
+		{R_type_op, AND_funct,  {5{1'bx}}}:   ALUCode = alu_and[4:0];
+		{R_type_op, XOR_funct,  {5{1'bx}}}:   ALUCode = alu_xor[4:0];
+		{R_type_op, OR_funct,   {5{1'bx}}}:   ALUCode = alu_or[4:0];
+		{R_type_op, NOR_funct,  {5{1'bx}}}:   ALUCode = alu_nor[4:0];
+		{R_type_op, SUB_funct,  {5{1'bx}}}:   ALUCode = alu_sub[4:0];
+		{R_type_op, SUBU_funct, {5{1'bx}}}:   ALUCode = alu_sub[4:0];
+		{R_type_op, SLT_funct,  {5{1'bx}}}:   ALUCode = alu_slt[4:0];
+		{R_type_op, SLTU_funct, {5{1'bx}}}:   ALUCode = alu_sltu[4:0];
+		{R_type_op, SLL_funct,  {5{1'bx}}}:   ALUCode = alu_sll[4:0];
+		{R_type_op, SLLV_funct, {5{1'bx}}}:   ALUCode = alu_sll[4:0];
+		{R_type_op, SRL_funct,  {5{1'bx}}}:   ALUCode = alu_srl[4:0];
+		{R_type_op, SRLV_funct, {5{1'bx}}}:   ALUCode = alu_srl[4:0];
+		{R_type_op, SRA_funct,  {5{1'bx}}}:   ALUCode = alu_sra[4:0];
+		{R_type_op, SRAV_funct, {5{1'bx}}}:   ALUCode = alu_sra[4:0];
+		{ADDI_op ,  {6{1'bx}},  {5{1'bx}}}:   ALUCode = alu_add[4:0];
+		{ADDIU_op,  {6{1'bx}},  {5{1'bx}}}:   ALUCode = alu_add[4:0];
+		{ANDI_op ,  {6{1'bx}},  {5{1'bx}}}:   ALUCode = alu_andi[4:0];
+		{XORI_op ,  {6{1'bx}},  {5{1'bx}}}:   ALUCode = alu_xori[4:0];
+		{ORI_op  ,  {6{1'bx}},  {5{1'bx}}}:   ALUCode = alu_ori[4:0];
+		{SLTI_op ,  {6{1'bx}},  {5{1'bx}}}:   ALUCode = alu_slt[4:0];
+		{SLTIU_op,  {6{1'bx}},  {5{1'bx}}}:   ALUCode = alu_sltu[4:0];
+		{SW_op,     {6{1'bx}},  {5{1'bx}}}:   ALUCode = alu_add[4:0];
+		{LW_op,     {6{1'bx}},  {5{1'bx}}}:   ALUCode = alu_add[4:0];
+		default: ALUCode = {32{1'bz}};
+	  endcase
 	
-
 endmodule

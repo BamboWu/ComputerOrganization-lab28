@@ -147,8 +147,8 @@ module ID(clk,Instruction_id, NextPC_id, RegWrite_wb, RegWriteAddr_wb, RegWriteD
 
    //MUX for RsData_id  &  MUX for RtData_id
 	
-	mux_2to1 mux_RsData_id(.sel(RsSel),.in0(RsData_temp),.in1(RegWriteData_wb),.out(RsData_id));
-	mux_2to1 mux_RtData_id(.sel(RtSel),.in0(RtData_temp),.in1(RegWriteData_wb),.out(RtData_id));
+	mux_2to1 #(.WIDTH(32)) mux_RsData_id(.sel(RsSel),.in0(RsData_temp),.in1(RegWriteData_wb),.out(RsData_id));
+	mux_2to1 #(.WIDTH(32)) mux_RtData_id(.sel(RtSel),.in0(RtData_temp),.in1(RegWriteData_wb),.out(RtData_id));
 	   
 
 endmodule
