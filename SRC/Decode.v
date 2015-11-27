@@ -20,13 +20,13 @@ Instruction
 );
 
 	
-	input [31:0]	Instruction;			// current instruction
+	input [31:0]   Instruction;			// current instruction
 	output		   MemtoReg;			// use memory output as data to write into register
-	output		   RegWrite;		// enable writing back to the register
+	output		   RegWrite;		    // enable writing back to the register
 	output		   MemWrite;			// write to memory
 	output         MemRead;
-	output [4:0]   ALUCode;     // ALU operation select
-	output      	ALUSrcA,ALUSrcB;
+	output [4:0]   ALUCode;             // ALU operation select
+	output         ALUSrcA,ALUSrcB;
 	output         RegDst;
 	output         J,JR;
 	
@@ -38,9 +38,9 @@ Instruction
 	wire [5:0]		op;
 	wire [4:0]		rt;
 	wire [5:0]		funct;
-	assign op			= Instruction[31:26];
-	assign funct		= Instruction[5:0];
-	assign rt   		= Instruction[20:16];
+	assign op	  = Instruction[31:26];
+	assign funct  = Instruction[5:0];
+	assign rt     = Instruction[20:16];
 	
 
 //******************************************************************************
@@ -48,24 +48,24 @@ Instruction
 //******************************************************************************
 
 	
-	parameter  R_type_op= 6'b000000;
-   parameter  ADD_funct =  6'b100000;
+	parameter  R_type_op  = 6'b000000;
+    parameter  ADD_funct  = 6'b100000;
 	parameter  ADDU_funct = 6'b100001;
-	parameter  AND_funct =  6'b100100;
-	parameter  XOR_funct =  6'b100110;
-	parameter  OR_funct =   6'b100101;
-	parameter  NOR_funct =  6'b100111;
-	parameter  SUB_funct =  6'b100010;
+	parameter  AND_funct  = 6'b100100;
+	parameter  XOR_funct  = 6'b100110;
+	parameter  OR_funct   = 6'b100101;
+	parameter  NOR_funct  = 6'b100111;
+	parameter  SUB_funct  = 6'b100010;
 	parameter  SUBU_funct = 6'b100011;
-	parameter  SLT_funct =  6'b101010;
+	parameter  SLT_funct  = 6'b101010;
 	parameter  SLTU_funct = 6'b101011;	
-	parameter  SLL_funct= 6'b000000;
-	parameter  SLLV_funct=6'b000100;
-	parameter  SRL_funct= 6'b000010;
-	parameter  SRLV_funct=6'b000110;
-	parameter  SRA_funct= 6'b000011;
-	parameter  SRAV_funct=6'b000111;
-	parameter  JR_funct= 6'b001000;
+	parameter  SLL_funct  = 6'b000000;
+	parameter  SLLV_funct = 6'b000100;
+	parameter  SRL_funct  = 6'b000010;
+	parameter  SRLV_funct = 6'b000110;
+	parameter  SRA_funct  = 6'b000011;
+	parameter  SRAV_funct = 6'b000111;
+	parameter  JR_funct   = 6'b001000;
 //******************************************************************************
 // R_type1 instruction decode
 //******************************************************************************
@@ -114,8 +114,8 @@ Instruction
 	parameter BGEZ_rt= 5'b00001;
 	parameter BGTZ_op= 6'b000111;
 	parameter BGTZ_rt= 5'b00000;
-	parameter BLEZ_op = 6'b000110;
-	parameter BLEZ_rt = 5'b00000;
+	parameter BLEZ_op= 6'b000110;
+	parameter BLEZ_rt= 5'b00000;
 	parameter BLTZ_op= 6'b000001;
 	parameter BLTZ_rt= 5'b00000;
 
@@ -162,7 +162,7 @@ Instruction
 //******************************************************************************
 // SW ,LW instruction decode
 //******************************************************************************	
-   parameter  SW_op = 6'b101011;
+    parameter  SW_op = 6'b101011;
 	parameter  LW_op = 6'b100011;
 	wire SW,LW;
 	assign  SW=  (op ==  SW_op) ;
@@ -173,7 +173,13 @@ Instruction
 //  Control Singal 
 //******************************************************************************
 	
-
+    assign RegWrite = LW || R_type1 || R_type2 || I_type;
+	assign RegDst = R_type1 || R_type2;
+	assign MemWrite = SW;
+	assign MemRead = LW;
+	assign MemtoReg = LW;
+	assign ALUSrcA = R_type2;
+	assign ALUSrcB = LW || SW || I_type;
 
 
 //******************************************************************************
@@ -181,26 +187,26 @@ Instruction
 //******************************************************************************//
 	
 	parameter	 alu_add=  5'b00000;
-   parameter	 alu_and=  5'b00001;
-   parameter	 alu_xor=  5'b00010;
-   parameter	 alu_or =  5'b00011;
-   parameter	 alu_nor=  5'b00100;
-   parameter	 alu_sub=  5'b00101;
-   parameter	 alu_andi= 5'b00110;
+    parameter	 alu_and=  5'b00001;
+    parameter	 alu_xor=  5'b00010;
+    parameter	 alu_or =  5'b00011;
+    parameter	 alu_nor=  5'b00100;
+    parameter	 alu_sub=  5'b00101;
+    parameter	 alu_andi= 5'b00110;
 	parameter	 alu_xori= 5'b00111;
 	parameter	 alu_ori = 5'b01000;
 	parameter    alu_jr =  5'b01001;
 	parameter	 alu_beq=  5'b01010;
-   parameter	 alu_bne=  5'b01011;
+    parameter	 alu_bne=  5'b01011;
 	parameter	 alu_bgez= 5'b01100;
-   parameter	 alu_bgtz= 5'b01101;
-   parameter	 alu_blez= 5'b01110;
-   parameter	 alu_bltz= 5'b01111;
+    parameter	 alu_bgtz= 5'b01101;
+    parameter	 alu_blez= 5'b01110;
+    parameter	 alu_bltz= 5'b01111;
 	parameter 	 alu_sll=  5'b10000;
 	parameter	 alu_srl=  5'b10001;
 	parameter	 alu_sra=  5'b10010;	
 	parameter	 alu_slt=  5'b10011;
-   parameter	 alu_sltu= 5'b10100;
+    parameter	 alu_sltu= 5'b10100;
 		
 	
 	
