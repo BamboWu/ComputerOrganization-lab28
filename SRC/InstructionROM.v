@@ -9,7 +9,7 @@ module InstructionROM(addr,dout);
 			6'd0:   dout=32'h0800000b ; /* op=2h offset=0bh                                        */   
 			                            /* j 0bh # jump to 6'd11, PC = 2ch                         */   
 			6'd1:   dout=32'h20080042 ; /* op=8h rs=0 rt=8 imm=42h                                 */   
-                                        /* addi $t0, $zero, 68           			               */   
+                                        /* addi $t0, $zero, 66           			               */   
 			6'd2:   dout=32'h20090004 ; /* op=8h rs=0 rt=9 imm=4h                                  */   
 			                            /* addi $t1, $zero, 4                                      */   
 			6'd3:   dout=32'h01095022 ; /* op=0h rs=8 rt=9 rd=10 sa=0h func=22h                    */   

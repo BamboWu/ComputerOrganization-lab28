@@ -74,7 +74,7 @@ module ALU (
    wire[31:0] sum;
    wire Binvert;
    
-   assign Binvert = ~(ALUCode==alu_add || ALUCode==alu_sltu);
+   assign Binvert = ~(ALUCode==alu_add);
    
    adder_32bits adder_ALU(.a(A),.b(B^{32{Binvert}}),.ci(Binvert),.s(sum),.co(overflow));
    /*assign Res_add = A + B;*/
@@ -109,7 +109,7 @@ module ALU (
       alu_srl  : Result = B >> A;
       alu_sra  : Result = B_reg >>> A;
       alu_slt  : Result = A[31]&&(~B[31]) || (A[31]~^B[31])&&sum[31];
-      alu_sltu : Result = &{overflow,sum};
+      alu_sltu : Result = {31'd0,~overflow};
       default  : Result = {32{1'bz}};
     endcase	  
 	  
