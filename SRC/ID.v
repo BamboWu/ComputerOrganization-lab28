@@ -42,7 +42,7 @@ module ID(clk,Instruction_id, NextPC_id, RegWrite_wb, RegWriteAddr_wb, RegWriteD
     output reg Z;
     output J;
     output JR;
-    output PC_IFWrite;
+    output reg PC_IFWrite;
     output [31:0] BranchAddr;
     output [31:0] JumpAddr;
     output [31:0] JrAddr;
@@ -101,7 +101,7 @@ module ID(clk,Instruction_id, NextPC_id, RegWrite_wb, RegWriteAddr_wb, RegWriteD
     assign Stall =	MemRead_ex &
 	                ( (RsAddr_id==RegWriteAddr_ex)|
 					  (RtAddr_id==RegWriteAddr_ex)  );
-	assign PC_IFWrite = ~Stall;		
+	always@(negedge clk) PC_IFWrite = ~Stall;		
 
 //	Decode inst
    Decode  Decode(   
