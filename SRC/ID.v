@@ -92,15 +92,16 @@ module ID(clk,Instruction_id, NextPC_id, RegWrite_wb, RegWriteAddr_wb, RegWriteD
 		alu_bgtz:Z = ~RsData_id[31] &&(|RsData_id[30:0]);
 		alu_bltz:Z = RsData_id[31];
 		alu_blez:Z = RsData_id[31] ||~(&RsData_id[30:0]);
-		default: Z = 31{1'b0};
+		default: Z = {31{1'b0}};
 	 endcase
 	 
 //Hazard detectior   
 
-    assign stall =	MemRead_ex && 
-	                ( (RsAddr_id==RegWriteAddr_ex)||
+    //always@(*) Stall = MemRead_ex & ((RsAddr_id==RegWriteAddr_ex) | (RsAddr_id==RegWriteAddr_ex));
+    assign Stall =	MemRead_ex &
+	                ( (RsAddr_id==RegWriteAddr_ex)|
 					  (RtAddr_id==RegWriteAddr_ex)  );
-	assign PC_IFWrite = ~stall;		
+	assign PC_IFWrite = ~Stall;		
 
 //	Decode inst
    Decode  Decode(   
@@ -142,7 +143,7 @@ module ID(clk,Instruction_id, NextPC_id, RegWrite_wb, RegWriteAddr_wb, RegWriteD
 	
 	wire RsSel,RtSel;
 	
-    assign {RsSel,RtSel} = {2{RegWrite_wb}} & {2{RegWriteAddr_wb~=6'd0}} &
+    assign {RsSel,RtSel} = {2{RegWrite_wb}} & {2{|RegWriteAddr_wb}} &
 	                         {(RsAddr_id==RegWriteAddr_wb),(RtAddr_id==RegWriteAddr_wb)};
 
    //MUX for RsData_id  &  MUX for RtData_id

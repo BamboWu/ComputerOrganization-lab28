@@ -47,7 +47,7 @@ module IF(clk, reset, Z, J, JR, PC_IFWrite, JumpAddr,
 	
 //PC REG
 
-    dff #(.WIDTH(32))Program_Counter(.clk(clk&PC_IFWrite),.r(reset),.d(PC_in),.q(PC));
+    dffr #(.WIDTH(32))Program_Counter(.clk(clk&PC_IFWrite),.r(reset),.d(PC_in),.q(PC));
      
 //Adder for NextPC
 

@@ -241,6 +241,7 @@ Instruction
 		{SLTIU_op,  {6{1'bx}},  {5{1'bx}}}:   ALUCode = alu_sltu[4:0];
 		{SW_op,     {6{1'bx}},  {5{1'bx}}}:   ALUCode = alu_add[4:0];
 		{LW_op,     {6{1'bx}},  {5{1'bx}}}:   ALUCode = alu_add[4:0];
+		{J_op,      {6{1'bx}},  {5{1'bx}}}:   ALUCode = {32{1'b0}};
 		default: ALUCode = {32{1'bz}};
 	  endcase
 	
