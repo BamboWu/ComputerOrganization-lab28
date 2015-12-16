@@ -66,7 +66,7 @@ module MipsPipelineCPU(clk, reset, JumpFlag, Instruction_id, ALU_A,
     wire IF_flush;
 	assign IF_flush=Z || J ||JR;
     
-    dffr #(.WIDTH(64)) IF2ID(.clk(clk&PC_IFWrite),.r(reset|IF_flush),
+    dffre #(.WIDTH(64)) IF2ID(.clk(clk),.en(PC_IFWrite),.r(reset|IF_flush),
 	       /*32+32*/         .d({NextPC_if,Instruction_if}),
 						     .q({NextPC_id,Instruction_id}));
      
@@ -82,16 +82,26 @@ module MipsPipelineCPU(clk, reset, JumpFlag, Instruction_id, ALU_A,
     wire  MemRead_ex;
     /* Feedbacks from EX*/
     wire[4:0]  RegWriteAddr_ex;
+	/* Feedbacks from MEM */
+	wire[31:0] ALUResult_mem;
+	wire[4:0] RegWriteAddr_mem;
+	wire RegWrite_mem;
+	/* Feedback from EX2MEM */
+	wire MemRead_mem;
 	
     ID ID(
 	.clk(clk),
 	.NextPC_id(NextPC_id), 
 	.Instruction_id(Instruction_id), 
 	.RegWrite_wb(RegWrite_wb), 
+	.RegWrite_mem(RegWrite_mem), 
 	.RegWriteAddr_wb(RegWriteAddr_wb), 
 	.RegWriteData_wb(RegWriteData_wb), 
+	.ALUResult_mem(ALUResult_mem),
 	.MemRead_ex(MemRead_ex), 
+	.MemRead_mem(MemRead_mem), 
     .RegWriteAddr_ex(RegWriteAddr_ex), 
+    .RegWriteAddr_mem(RegWriteAddr_mem), 
     /*output*/
 	.MemtoReg_id(MemToReg_id), 
 	.RegWrite_id(RegWrite_id), 
@@ -126,27 +136,26 @@ module MipsPipelineCPU(clk, reset, JumpFlag, Instruction_id, ALU_A,
 	wire[31:0] Sa_ex,Imm_ex,RsData_ex,RtData_ex;
 	wire[4:0] RdAddr_ex,RsAddr_ex,RtAddr_ex;
 	 
-	dffr #(.WIDTH(2))   ID2EX_wb(.clk(clk),.r(reset|Stall),
+	dffre #(.WIDTH(2))   ID2EX_wb(.clk(clk),.r(reset),.en(~Stall),
 	       /*1+1*/      /* WB */ .d({MemToReg_id,RegWrite_id}),
 	    				  		 .q({MemToReg_ex,RegWrite_ex}));
-	dffr #(.WIDTH(2))   ID2EX_mem(.clk(clk),.r(reset|Stall),
+	dffre #(.WIDTH(2))   ID2EX_mem(.clk(clk),.r(reset),.en(~Stall),
 	       /*1+1*/      /* M */   .d({MemWrite_id,MemRead_id}),
 						  		  .q({MemWrite_ex,MemRead_ex}));
-	dffr #(.WIDTH(8))   ID2EX_ex(.clk(clk),.r(reset|Stall),
+	dffre #(.WIDTH(8))   ID2EX_ex(.clk(clk),.r(reset),.en(~Stall),
 	       /*5+1+1+1*/  /* EX */ .d({ALUCode_id,ALUSrcA_id,ALUSrcB_id,RegDst_id}),
 								 .q({ALUCode_ex,ALUSrcA_ex,ALUSrcB_ex,RegDst_ex}));
-	dffr #(.WIDTH(143)) ID2EX_Data(.clk(clk),.r(reset|Stall),
+	dffre #(.WIDTH(143)) ID2EX_Data(.clk(clk),.r(reset),.en(~Stall),
 	       /*32*2+5*3+32*2*/       .d({Sa_id,Imm_id,RdAddr_id,RsAddr_id,RtAddr_id,RsData_id,RtData_id}),
 								   .q({Sa_ex,Imm_ex,RdAddr_ex,RsAddr_ex,RtAddr_ex,RsData_ex,RtData_ex}));
 
 // EX Module
     /*wire[4:0] RegWriteAddr_ex has feedback to ID */
+    /*wire[31:0] ALUResult_mem; has feedback to ID */
+    /*wire[4:0] RegWriteAddr_mem; has feedback to ID */
+    /*wire RegWrite_mem; has feedback to ID */
     wire[31:0] ALUResult_ex,MemWriteData_ex;
     /* RegWriteAddr_wb,RegWriteData_wb feedback from WB defined at ID stage*/
-    /* Feedback from MEM */
-    wire RegWrite_mem;
-    wire[4:0] RegWriteAddr_mem;
-    wire[31:0] ALUResult_mem;
  
     EX EX(
     .ALUCode_ex(ALUCode_ex), 
@@ -178,14 +187,16 @@ module MipsPipelineCPU(clk, reset, JumpFlag, Instruction_id, ALU_A,
 
 //EX->MEM
 
-    wire MemToReg_mem; /* RegWrite_mem feedbacks to EX */
-	wire MemWrite_mem;
+    wire MemToReg_mem; /* RegWrite_mem feedbacks to ID */
+	wire MemWrite_mem; /* MemRead_mem feedbacks to ID */
     wire[31:0] MemWriteData_mem;
-	/* ALUResult_mem,RegWriteAddr_mem feedback to EX */
+	/* ALUResult_mem,RegWriteAddr_mem feedback to ID */
 	dffr #(.WIDTH(2))  EX2MEM_wb(.clk(clk),.r(reset),
 	       /*1+1*/     /* WB */  .d({MemToReg_ex,RegWrite_ex}),
 		                         .q({MemToReg_mem,RegWrite_mem}));
-	dffr   /* M */     EX2MEM_mem(.clk(clk),.r(reset),.d(MemWrite_ex),.q(MemWrite_mem));
+	dffr #(.WIDTH(2))  EX2MEM_mem(.clk(clk),.r(reset),
+	       /*1+1*/     /* M */   .d({MemRead_ex,MemWrite_ex}),
+		                         .q({MemRead_mem,MemWrite_mem}));
 	dffr #(.WIDTH(69)) EX2MEM_Data(.clk(clk),.r(reset),
 	       /*32+32+5*/ /* Data */  .d({ALUResult_ex,MemWriteData_ex,RegWriteAddr_ex}),
 								   .q({ALUResult_mem,MemWriteData_mem,RegWriteAddr_mem}));

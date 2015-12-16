@@ -18,18 +18,22 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module ID(clk,Instruction_id, NextPC_id, RegWrite_wb, RegWriteAddr_wb, RegWriteData_wb, MemRead_ex, 
-          RegWriteAddr_ex, MemtoReg_id, RegWrite_id, MemWrite_id, MemRead_id, ALUCode_id, 
+module ID(clk,Instruction_id, NextPC_id, RegWrite_wb, RegWrite_mem, RegWriteAddr_wb, RegWriteData_wb, ALUResult_mem, MemRead_ex, MemRead_mem, 
+          RegWriteAddr_ex, RegWriteAddr_mem, MemtoReg_id, RegWrite_id, MemWrite_id, MemRead_id, ALUCode_id, 
     	  ALUSrcA_id, ALUSrcB_id, RegDst_id, Stall, Z, J, JR, PC_IFWrite,  BranchAddr, JumpAddr, JrAddr,
 		  Imm_id, Sa_id, RsData_id, RtData_id, RsAddr_id, RtAddr_id, RdAddr_id);
     input clk;
 	input [31:0] Instruction_id;
     input [31:0] NextPC_id;
     input RegWrite_wb;
+    input RegWrite_mem;
     input [4:0] RegWriteAddr_wb;
     input [31:0] RegWriteData_wb;
+    input [31:0] ALUResult_mem;
     input MemRead_ex;
+    input MemRead_mem;
     input [4:0] RegWriteAddr_ex;
+    input [4:0] RegWriteAddr_mem;
     output MemtoReg_id;
     output RegWrite_id;
     output MemWrite_id;
@@ -83,24 +87,59 @@ module ID(clk,Instruction_id, NextPC_id, RegWrite_wb, RegWriteAddr_wb, RegWriteD
    parameter	 alu_bgtz= 5'b01101;
    parameter	 alu_blez= 5'b01110;
    parameter	 alu_bltz= 5'b01111;
+   
+   
+//forwarding
+	wire[1:0] ForwardRs,ForwardRt;
+
+	assign ForwardRs[0] = RegWrite_wb && (|RegWriteAddr_wb) &&  /* 2nd data hazard */
+	                     ~(RegWriteAddr_mem==RsAddr_id) && (RegWriteAddr_wb==RsAddr_id);
+	assign ForwardRs[1] = RegWrite_mem && (|RegWriteAddr_mem) &&
+	                     (RegWriteAddr_mem==RsAddr_id);             /* 1st data hazard */
+
+	assign ForwardRt[0] = RegWrite_wb && (|RegWriteAddr_wb) &&  /* 2nd data hazard */
+	                     ~(RegWriteAddr_mem==RtAddr_id) && (RegWriteAddr_wb==RtAddr_id);
+	assign ForwardRt[1] = RegWrite_mem && (|RegWriteAddr_mem) &&
+	                     (RegWriteAddr_mem==RtAddr_id);             /* 1st data hazard */
+//MUX for Rs
+    
+	wire[31:0] ALU_Rs_temp;
+    mux_4to1 #(.WIDTH(32)) mux_Rs(.sel(ForwardRs),
+	                             .in0(RsData_id),.in1(RegWriteData_wb),
+								 .in2(ALUResult_mem),.in3(32'd0),.out(ALU_Rs_temp));
+
+//MUX for Rt
+
+	wire[31:0] ALU_Rt_temp;
+    mux_4to1 #(.WIDTH(32)) mux_Rt(.sel(ForwardRt),
+	                             .in0(RtData_id),.in1(RegWriteData_wb),
+								 .in2(ALUResult_mem),.in3(32'd0),.out(ALU_Rt_temp));
 
     always@(*)
      case(ALUCode_id)
-	    alu_beq: Z = &(RsData_id[31:0]~^RtData_id[31:0]);
-		alu_bne: Z = |(RsData_id[31:0]^RtData_id[31:0]);
-		alu_bgez:Z = ~RsData_id[31];
-		alu_bgtz:Z = ~RsData_id[31] &&(|RsData_id[30:0]);
-		alu_bltz:Z = RsData_id[31];
-		alu_blez:Z = RsData_id[31] ||~(&RsData_id[30:0]);
+	    alu_beq: Z = &(ALU_Rs_temp[31:0]~^ALU_Rt_temp[31:0]);
+		alu_bne: Z = |(ALU_Rs_temp[31:0]^ALU_Rt_temp[31:0]);
+		alu_bgez:Z = ~ALU_Rs_temp[31];
+		alu_bgtz:Z = ~ALU_Rs_temp[31] &&(|ALU_Rs_temp[30:0]);
+		alu_bltz:Z = ALU_Rs_temp[31];
+		alu_blez:Z = ALU_Rs_temp[31] ||~(&ALU_Rs_temp[30:0]);
 		default: Z = {31{1'b0}};
 	 endcase
+	 
+	wire Branch; /* Branch operation */
+    assign Branch = (ALUCode_id==alu_beq)|(ALUCode_id==alu_bne)|(ALUCode_id==alu_bgez)|
+	                (ALUCode_id==alu_bgtz)|(ALUCode_id==alu_bltz)|(ALUCode_id==alu_blez);	
 	 
 //Hazard detectior   
 
     //always@(*) Stall = MemRead_ex & ((RsAddr_id==RegWriteAddr_ex) | (RsAddr_id==RegWriteAddr_ex));
-    assign Stall =	MemRead_ex &
-	                ( (RsAddr_id==RegWriteAddr_ex)|
-					  (RtAddr_id==RegWriteAddr_ex)  );
+    assign Stall =	( MemRead_ex &
+	                  (  (RsAddr_id==RegWriteAddr_ex)|
+					     (RtAddr_id==RegWriteAddr_ex) ) |
+					  MemRead_mem &
+                      ( ((RsAddr_id==RegWriteAddr_mem)&Branch)|
+					    ((RtAddr_id==RegWriteAddr_mem)&Branch) )
+					);
 	always@(negedge clk) PC_IFWrite = ~Stall;		
 
 //	Decode inst
